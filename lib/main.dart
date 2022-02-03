@@ -9,9 +9,11 @@ void main() {
                 'App Bar',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Color(0xff7605a6)
+                //color: Color(0xff7605a6)
+                color: Color(0xffffffff)
               ),
             ),
+            backgroundColor: Color(0xff000000),
           ),
           body: Center(
             child: Text(
@@ -21,6 +23,7 @@ void main() {
           floatingActionButton: FloatingActionButton(
             child: Text("Click"),
             onPressed: (){},
+            backgroundColor: Color(0xff000000),
           ),
         ),
       ));

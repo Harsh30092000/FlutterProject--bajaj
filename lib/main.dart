@@ -1,106 +1,141 @@
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
 import 'dart:math' as math;
-/*
-void main() {
-  runApp(
-      MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          appBar: AppBar(
-            title: Text(
-                'App Bar',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                //color: Color(0xff7605a6)
-                color: Color(0xffffffff)
-              ),
-            ),
-            backgroundColor: Color(0xff000000),
-          ),
-          body: Center(
-            child: Text(
-              "Hello World!"
-            ),
-          ),
-          floatingActionButton: FloatingActionButton(
-            child: Text("Click"),
-            onPressed: (){},
-            backgroundColor: Color(0xff000000),
-          ),
-        ),
-      ));
+
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
+
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
+
+import 'data/Dog.dart';
+
+  var database;
+void main() async {
+  // Avoid errors caused by flutter upgrade.
+  // Importing 'package:flutter/widgets.dart' is required.
+  WidgetsFlutterBinding.ensureInitialized();
+  // Open the database and store the reference.
+   database = await openDatabase(
+    // Set the path to the database. Note: Using the `join` function from the
+    // `path` package is best practice to ensure the path is correctly
+    // constructed for each platform.
+    join(await getDatabasesPath(), 'doggie_database.db'),
+    // When the database is first created, create a table to store dogs.
+    onCreate: (db, version) {
+      // Run the CREATE TABLE statement on the database.
+      return db.execute(
+        'CREATE TABLE dogs(id INTEGER PRIMARY KEY, name TEXT, age INTEGER)',
+      );
+    },
+    // Set the version. This executes the onCreate function and provides a
+    // path to perform database upgrades and downgrades.
+    version: 1,
+  );
+
+  var fido = Dog(
+    id: 1,
+    name: "german",
+    age: 3
+  );
+ // insertDog(Dog(1,"german shepherd",3));
+  insertDog(fido);
+  print(await dogs());
 }
+  // Define a function that inserts dogs into the database
+  Future<void> insertDog(Dog dog) async {
+    // Get a reference to the database.
+    final db = await database;
 
- */
-/*
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    //final wordPair = WordPair.random();
-    return MaterialApp(title: 'Welcome to Flutter', home: RandomWords());
+    // Insert the Dog into the correct table. You might also specify the
+    // `conflictAlgorithm` to use in case the same dog is inserted twice.
+    //
+    // In this case, replace any previous data.
+    await db.insert(
+      'dogs',
+      dog.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    print('inserted a dog');
   }
-}
 
-class RandomWords extends StatefulWidget {
-  const RandomWords({Key? key}) : super(key: key);
+  // A method that retrieves all the dogs from the dogs table.
+  Future<List<Dog>> dogs() async {
+    // Get a reference to the database.
+    final db = await database;
 
-  @override
-  _RandomWordsState createState() => _RandomWordsState();
-}
+    // Query the table for all The Dogs.
+    final List<Map<String, dynamic>> maps = await db.query('dogs');
 
-class _RandomWordsState extends State<RandomWords> {
-  final _suggestions = <WordPair>[];
-  final _biggerFont = const TextStyle(fontSize: 18.0);
+    // Convert the List<Map<String, dynamic> into a List<Dog>.
+    return List.generate(maps.length, (i) {
+      return Dog(
+        id: maps[i]['id'],
+        name: maps[i]['name'],
+        age: maps[i]['age'],
+      );
+    });
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Startup Name Generator'),
-      ),
-      body: _buildSuggestions(),
+  Future<void> updateDog(Dog dog) async {
+    // Get a reference to the database.
+    final db = await database;
+
+    // Update the given Dog.
+    await db.update(
+      'dogs',
+      dog.toMap(),
+      // Ensure that the Dog has a matching id.
+      where: 'id = ?',
+      // Pass the Dog's id as a whereArg to prevent SQL injection.
+      whereArgs: [dog.id],
     );
   }
 
-  Widget _buildSuggestions() {
-    return ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemBuilder: /*1*/ (context, i) {
-          if (i.isOdd) return const Divider();
-          /*2*/
+  Future<void> deleteDog(int id) async {
+    // Get a reference to the database.
+    final db = await database;
 
-          final index = i ~/ 2; /*3*/
-          if (index >= _suggestions.length) {
-            _suggestions.addAll(generateWordPairs().take(10)); /*4*/
-          }
-          return _buildRow(_suggestions[index]);
-        });
-  }
-
-  Widget _buildRow(WordPair pair) {
-    return ListTile(
-      title: Row(children: <Widget>[
-        Expanded(
-            flex: 2,
-            child: Icon(Icons.audiotrack,
-                color: Color((math.Random().nextDouble() * 0xFFFFFF).toInt())
-                    .withOpacity(1.0))),
-        Expanded(
-          flex: 8,
-          child: Text(
-            pair.asPascalCase,
-            style: _biggerFont,
-          ),
-        ),
-      ]),
+    // Remove the Dog from the database.
+    await db.delete(
+      'dogs',
+      // Use a `where` clause to delete a specific dog.
+      where: 'id = ?',
+      // Pass the Dog's id as a whereArg to prevent SQL injection.
+      whereArgs: [id],
     );
   }
-}
-*/
+  /*
+
+  // Create a Dog and add it to the dogs table
+  var fido = Dog(
+    id: 0,
+    name: 'Fido',
+    age: 35,
+  );
+
+  await insertDog(fido);
+
+  // Now, use the method above to retrieve all the dogs.
+  print(await dogs()); // Prints a list that include Fido.
+
+  // Update Fido's age and save it to the database.
+  fido = Dog(
+    id: fido.id,
+    name: fido.name,
+    age: fido.age + 7,
+  );
+  await updateDog(fido);
+
+  // Print the updated results.
+  print(await dogs()); // Prints Fido with age 42.
+
+  // Delete Fido from the database.
+  await deleteDog(fido.id);
+
+  // Print the list of dogs (empty).
+  print(await dogs());
+
+   */
+
